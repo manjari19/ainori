@@ -158,3 +158,26 @@ Analogy: a parcel tracking page. Each handoff scans the same tracking number, so
    Metrics are cheap aggregates over many requests (rates, histograms) and tell you something is wrong. A trace follows one request and tells you where the time went.
 3. **Why does `ainori_stream_pending` matter?**
    It is the number of messages read but not acknowledged. If it grows, the matcher is stuck or crashing, which is exactly the situation at-least-once delivery is meant to recover from.
+
+## Replay mode and hosting
+
+### What it does
+The hosted Netlify site has no backend, so the map plays back a real recording: 450 simulated drivers and 1,200 requests at 10 per second, every WebSocket event saved with its time. If a backend is reachable the map goes live instead, and it keeps retrying in the background.
+
+Analogy: a flight-recorder replay. The same screen draws from a saved tape instead of the live feed.
+
+### Key design decisions
+- **The replay feeds the same reducer as the WebSocket.** The map code has one path, so replay cannot drift from live behaviour. Tradeoff: the recording must keep the exact message shape.
+- **The recording is compacted** (short IDs, 5 decimal places, one stats message per second) to about 1.1 MB.
+- **Demand heat decays over a few seconds.** Matching takes milliseconds, so "open requests per hexagon" was always zero. The gateway now also sends how many requests were created per hexagon in each 250ms batch, and the map cools each hexagon over about 2.5 seconds.
+- **Drivers glide between pings** instead of jumping every 2 seconds.
+- **Bug found by the production build:** MapLibre's worker file was not shipped, so the basemap never loaded. The fix emits the worker as an asset and points MapLibre at it.
+- **Latency on the replayed map is measured at the gateway,** so it is not the same measurement as the benchmark in `RESULTS.md`.
+
+### Likely interview questions
+1. **How does the site work without a server?**
+   It detects that no WebSocket connects within 3 seconds and replays a recorded event stream through the same state reducer. If a backend appears later, it switches to live.
+2. **Why record WebSocket events instead of a video?**
+   Events are small, crisp at any screen size, and drive the real UI code, so the replay is the real application rather than a picture of it.
+3. **What did the production build catch that dev did not?**
+   The map worker was not bundled. It is a reminder to test the built output, not only the dev server.

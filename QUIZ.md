@@ -35,3 +35,8 @@
 1. How does a trace continue across a Redis Stream hop?
 2. What would the Jaeger trace look like if the publisher forgot to inject the context?
 3. What does a growing `ainori_stream_pending` tell you?
+
+## Replay mode
+1. How does the map decide between live and replay?
+2. Why is the replay fed through the same reducer as live events?
+3. Why was open requests per hexagon always zero, and how was the heat display fixed?

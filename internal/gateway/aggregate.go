@@ -31,6 +31,7 @@ type Stats struct {
 	MatchRate     float64        `json:"match_rate"`
 	Reasons       map[string]int `json:"unmatched_reasons"`
 	P95Ms         float64        `json:"p95_ms"`
+	P99Ms         float64        `json:"p99_ms"`
 }
 
 // Aggregator turns raw stream events into browser messages. Matches go out immediately
@@ -44,6 +45,7 @@ type Aggregator struct {
 	moved     map[string]map[string]any // driver id -> latest position this window
 	demand    map[string]int            // open requests per hex
 	dirty     map[string]bool
+	created   map[string]int // requests created per hex since the last flush
 	matched   int
 	unmatched int
 	reasons   map[string]int
@@ -53,7 +55,7 @@ type Aggregator struct {
 func NewAggregator(hub *Hub, rdb *redis.Client) *Aggregator {
 	return &Aggregator{
 		hub: hub, rdb: rdb,
-		moved: map[string]map[string]any{}, demand: map[string]int{}, dirty: map[string]bool{},
+		moved: map[string]map[string]any{}, demand: map[string]int{}, dirty: map[string]bool{}, created: map[string]int{},
 		reasons: map[string]int{},
 	}
 }
@@ -71,6 +73,7 @@ func (a *Aggregator) RequestCreated(requestID string, lat, lng float64) {
 	}
 	a.mu.Lock()
 	a.demand[cell]++
+	a.created[cell]++
 	a.dirty[cell] = true
 	a.mu.Unlock()
 	a.hub.Broadcast(envelope("request_created", map[string]any{
@@ -134,6 +137,7 @@ func (a *Aggregator) Stats(ctx context.Context) Stats {
 		s.MatchRate = float64(a.matched) / float64(total)
 	}
 	s.P95Ms = percentile(a.latencies, 95)
+	s.P99Ms = percentile(a.latencies, 99)
 	return s
 }
 
@@ -170,12 +174,15 @@ func (a *Aggregator) flush(ctx context.Context) {
 	a.moved = map[string]map[string]any{}
 	var demand []map[string]any
 	for cell := range a.dirty {
-		demand = append(demand, map[string]any{"cell": cell, "count": a.demand[cell]})
+		// count is open requests now. recent is requests created since the last batch:
+		// matching takes milliseconds, so open requests alone is almost always zero.
+		demand = append(demand, map[string]any{"cell": cell, "count": a.demand[cell], "recent": a.created[cell]})
 		if a.demand[cell] == 0 {
 			delete(a.demand, cell)
 		}
 	}
 	a.dirty = map[string]bool{}
+	a.created = map[string]int{}
 	a.mu.Unlock()
 
 	if len(moved) > 0 {

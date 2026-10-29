@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ARC_MS, arcOpacity, initialState, reducer, slackMinutes } from './events'
+import { ARC_MS, arcOpacity, driverPosition, HEAT_COOL_MS, heatLevel, initialState, PING_MS, reducer, slackMinutes } from './events'
 
 const matched = {
   type: 'matched',
@@ -55,5 +55,41 @@ describe('helpers', () => {
     expect(arcOpacity(0)).toBe(1)
     expect(arcOpacity(ARC_MS / 2)).toBeCloseTo(0.5)
     expect(arcOpacity(ARC_MS * 2)).toBe(0)
+  })
+})
+
+describe('driver movement', () => {
+  it('glides from the previous ping to the latest one', () => {
+    const at = (lng: number, now: number) =>
+      reducer(initialState, { kind: 'event', msg: { type: 'driver_moved', data: [{ id: 'd1', lat: '49', lng: String(lng) }] }, now })
+    const first = at(-123.0, 0)
+    const second = reducer(first, { kind: 'event', msg: { type: 'driver_moved', data: [{ id: 'd1', lat: '49', lng: '-122.0' }] }, now: 1000 })
+    const d = second.drivers.d1
+    expect(driverPosition(d, 1000)[0]).toBeCloseTo(-123.0)
+    expect(driverPosition(d, 1000 + PING_MS / 2)[0]).toBeCloseTo(-122.5)
+    expect(driverPosition(d, 1000 + PING_MS * 3)[0]).toBeCloseTo(-122.0)
+  })
+
+  it('reset clears the map but keeps the connection flag', () => {
+    const moved = reducer(initialState, { kind: 'event', msg: { type: 'driver_moved', data: [{ id: 'd1', lat: '49', lng: '-123' }] }, now: 0 })
+    const s = reducer({ ...moved, connected: true }, { kind: 'reset' })
+    expect(Object.keys(s.drivers)).toHaveLength(0)
+    expect(s.connected).toBe(true)
+  })
+})
+
+describe('demand heat', () => {
+  const up = (now: number, state = initialState) =>
+    reducer(state, { kind: 'event', msg: { type: 'demand_hex', data: [{ cell: 'abc', count: 1 }] }, now })
+
+  it('rises with repeated requests in a hexagon and cools over time', () => {
+    const s = up(1000, up(0))
+    expect(heatLevel(s.heat.abc, 1000)).toBeCloseTo(2 - 1000 / HEAT_COOL_MS + 1 - 1, 1)
+    expect(heatLevel(s.heat.abc, 1000 + HEAT_COOL_MS * 5)).toBe(0)
+  })
+
+  it('drops fully cooled hexagons on tick', () => {
+    const s = reducer(up(0), { kind: 'tick', now: HEAT_COOL_MS * 3 })
+    expect(s.heat.abc).toBeUndefined()
   })
 })
