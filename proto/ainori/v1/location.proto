@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package ainori.v1;
+
+enum Gender {
+  GENDER_UNSPECIFIED = 0;
+  GENDER_WOMAN = 1;
+  GENDER_MAN = 2;
+  GENDER_NONBINARY = 3;
+}
+
+// Live state of one driver, as stored in Redis.
+message Driver {
+  string id = 1;
+  double lat = 2;
+  double lng = 3;
+  string cell = 4; // H3 cell at resolution 8
+  int32 seats_left = 5;
+  Gender gender = 6;
+  bool women_nb_only = 7;
+  double eta_campus_min = 8; // minutes to campus from the current position
+  double fuel_l_per_100km = 9;
+  int64 last_seen_unix = 10;
+}
+
+message DriverPing {
+  string driver_id = 1;
+  double lat = 2;
+  double lng = 3;
+  int32 seats_left = 4;
+  Gender gender = 5;
+  bool women_nb_only = 6;
+  double fuel_l_per_100km = 7;
+}
+
+message Ack {}
+
+message NearbyRequest {
+  string cell = 1;        // rider pickup cell, H3 resolution 8
+  int32 max_k = 2;        // widest ring to search
+  int32 min_results = 3;  // stop widening once this many drivers are found
+}
+
+// Full driver state comes back in one response so the matcher needs no extra Redis lookups.
+message DriverList {
+  repeated Driver drivers = 1;
+  int32 k_used = 2;
+}
+
+service LocationService {
+  rpc UpdateLocation(DriverPing) returns (Ack);
+  rpc NearbyDrivers(NearbyRequest) returns (DriverList);
+}

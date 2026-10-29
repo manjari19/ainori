@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS recurring_rides;
+DROP TABLE IF EXISTS ride_requests;
+DROP TABLE IF EXISTS trips;
+DROP TABLE IF EXISTS riders;
+DROP TABLE IF EXISTS drivers;

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package ainori.v1;
+
+import "google/protobuf/timestamp.proto";
+
+message LatLng {
+  double lat = 1;
+  double lng = 2;
+}
+
+message Trip {
+  string id = 1;
+  string driver_id = 2;
+  repeated string rider_ids = 3;
+  google.protobuf.Timestamp matched_at = 4;
+  repeated LatLng pickup_points = 5;
+  google.protobuf.Timestamp est_arrival = 6;
+  double distance_km = 7;
+  double cost_per_person = 8;
+}
+
+message TripID {
+  string id = 1;
+}
+
+service MatchingService {
+  rpc GetTrip(TripID) returns (Trip);
+}

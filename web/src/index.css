@@ -1,0 +1,60 @@
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --text: #1b1f24;
+  --muted: #5d6673;
+  --line: #e3e6ea;
+  --accent: #1e5ac8;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #14171b; --panel: #1c2026; --text: #e8ebef; --muted: #98a2af; --line: #2c333c; --accent: #6ea0ff; }
+}
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; background: var(--bg); }
+body { overflow-x: hidden; }
+
+.app { display: flex; height: 100%; }
+.map { position: relative; flex: 1; min-width: 0; overflow: hidden; }
+.panel {
+  order: -1; width: 340px; flex-shrink: 0; overflow-y: auto; padding: 16px;
+  background: var(--panel); border-right: 1px solid var(--line);
+}
+header { display: flex; align-items: center; gap: 10px; }
+h1 { margin: 0; font-size: 1.5rem; }
+h2 { margin: 20px 0 6px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+h3 { margin: 0 0 8px; font-size: 1rem; }
+.sub { margin: 2px 0 14px; color: var(--muted); font-size: 0.9rem; }
+.note { margin: 4px 0; color: var(--muted); font-size: 0.85rem; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: #c0392b; }
+.dot.on { background: #2e9e5b; }
+
+.counters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.counters div { border: 1px solid var(--line); border-radius: 8px; padding: 10px; min-width: 0; }
+.counters b { display: block; font-size: 1.3rem; overflow-wrap: anywhere; }
+.counters span { color: var(--muted); font-size: 0.8rem; }
+
+.demo {
+  margin-top: 14px; width: 100%; padding: 10px; border: 0; border-radius: 8px;
+  background: var(--accent); color: #fff; font-size: 1rem; cursor: pointer;
+}
+ul { list-style: none; margin: 0; padding: 0; }
+.reasons li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.recent li { margin-bottom: 6px; }
+.recent button {
+  width: 100%; text-align: left; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: transparent; color: var(--text); cursor: pointer; font-size: 0.9rem;
+}
+.recent button.sel { border-color: var(--accent); }
+.detail { margin-top: 14px; border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; }
+dt { color: var(--muted); }
+dd { margin: 0; text-align: right; }
+
+/* Phone: map on top, panel scrolls underneath, nothing overlaps. */
+@media (max-width: 800px) {
+  .app { flex-direction: column; }
+  .map { flex: none; height: 48vh; min-height: 280px; }
+  .panel { order: 0; width: 100%; min-width: 0; flex: 1; border-right: 0; border-top: 1px solid var(--line); }
+}

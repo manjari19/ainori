@@ -1,0 +1,50 @@
+name: ci
+
+on: [push, pull_request]
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 10
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ainori
+          POSTGRES_PASSWORD: ainori_dev_password
+          POSTGRES_DB: ainori
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ainori" --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Apply migrations
+        run: |
+          for f in migrations/*.up.sql; do
+            PGPASSWORD=ainori_dev_password psql -h localhost -p 5433 -U ainori -d ainori -v ON_ERROR_STOP=1 -f "$f"
+          done
+      - run: go vet ./...
+      - run: go test -race -count=1 ./...
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build

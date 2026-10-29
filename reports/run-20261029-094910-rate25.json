@@ -1,0 +1,37 @@
+{
+  "started_at": "2026-10-29T09:49:10.458629-07:00",
+  "target": "http://localhost:8080",
+  "params": {
+    "drivers": 200,
+    "riders": 600,
+    "rate_req_per_s": 25,
+    "speed_multiplier": 10,
+    "seed": 20261029
+  },
+  "requests": 600,
+  "matched": 474,
+  "unmatched": 126,
+  "no_response": 0,
+  "request_errors": 0,
+  "ping_errors": 0,
+  "match_rate": 0.79,
+  "unmatched_reasons": {
+    "no_driver_nearby": 7,
+    "no_seats": 115,
+    "preference": 4
+  },
+  "match_latency_ms": {
+    "p50": 5.6,
+    "p95": 7.9,
+    "p99": 31.5,
+    "max": 37.9
+  },
+  "outcome_latency_ms": {
+    "p50": 5.5,
+    "p95": 7.9,
+    "p99": 31.5,
+    "max": 37.9
+  },
+  "send_seconds": 24,
+  "sustained_req_per_s": 25
+}
